@@ -1,39 +1,51 @@
 # Handcraft Burgers &amp; Brew — Spin to Win
 
 A single-file spin-to-win promo page for [Handcraft Burgers &amp; Brew](https://handcraftburgers.com/)
-(110 W 40th St, New York, NY). Guests give the wheel one turn and always walk away with
-something to redeem at the register.
+(110 W 40th St, New York, NY).
 
 No build step, no dependencies, no external assets. `index.html` is the whole app — drop it on
 any static host.
 
-## Prizes
+## The offer
 
-| Prize | Code the guest says | Odds |
-|---|---|---|
-| Free French Fries | `DISHIO FRIES` | 12 |
-| Free Signature House Sauce | `DISHIO SAUCE` | 33 |
-| Free Fountain Soda | `DISHIO DRINK` | 22 |
-| 10% Off Your Next Order | `DISHIO 10% OFF` | 33 |
+**Free hand-cut fries with any order of $25 or more.** Universal code, no expiry:
 
-Odds are relative weights, not percentages — they're normalized at draw time, so you can use any
-scale you like. Free fries is the priciest giveaway, so it's weighted rarest.
+```
+DISHIO FRIES
+```
 
-There is no losing wedge. Every guest wins something.
+## This is a guaranteed-win wheel, on purpose
+
+All eight segments are the same prize. That is a deliberate design decision, not an oversight.
+
+A wheel that *displays* four prizes but always lands on one is a rigged wheel. Guests compare
+results, and a promotion that shows odds it doesn't honor invites real trouble — FTC deceptive-
+practice rules and state promotion law both care about this. So the wheel shows only what you can
+actually win. The spin stays fun and tactile; nobody is told they had a shot at something they
+didn't.
+
+The economics work because the **$25 minimum** caps the cost, not the code's secrecy. That's why
+a universal, non-expiring, freely-shareable code is safe here: the worst case is someone spends
+$25 and gets fries, which is the deal you're offering anyway.
 
 ## Configuration
 
-Everything you'd normally want to change lives in two places near the top of `index.html`.
+**The prize** — the `PRIZE` object at the top of the script block:
 
-**Prizes and odds** — the `PRIZES` array in the script block. Edit a `weight` to change how often
-a prize hits; edit a `code` to change the redemption phrase. The wheel, the legend beneath it, and
-the prize ticket all render from this array, so adding or removing a prize updates the whole page.
+```js
+var PRIZE = {
+  id:'fries', l1:'FREE', l2:'FRIES',
+  name:'Free French Fries',
+  code:'DISHIO FRIES',
+  minSpend: 25
+};
+```
 
-Segment count is `PRIZES.length * 2` — each prize appears twice, directly opposite itself, so the
-wheel reads full rather than sparse.
+`l1`/`l2` are the two stacked lines on each wheel segment. `minSpend` feeds the ticket condition
+line, the terms, and the reporting payload — change the number in one place and it updates
+everywhere. Segment count is `SEG_COUNT` (8), alternating red/charcoal.
 
-**Brand colors** — the `:root` block at the top of the stylesheet. Every color on the page is a
-variable there:
+**Brand colors** — the `:root` block at the top of the stylesheet:
 
 ```css
 --ink:    #14110F;   /* near-black charcoal  */
@@ -45,6 +57,13 @@ variable there:
 > **Note:** handcraftburgers.com sits behind a Cloudflare bot check, so these were matched by eye
 > to the brand's craft-burger signage rather than sampled from their real assets. Swap in the
 > official hex values here and the whole page follows.
+
+### Going back to a multi-prize wheel
+
+If you ever want real variable prizes again: restore an array of prizes with `weight` values, add
+a weighted pick, and have `rotationFor()` target that prize's segments instead of a random one.
+The wheel, terms, and ticket all render from the config, so the rest follows. Just keep the
+displayed segments honest about what's actually winnable.
 
 ## Guest attribution
 
@@ -60,10 +79,10 @@ https://your-host/?g=guest_8842
 ```json
 {
   "guestId":  "guest_8842",
-  "prizeId":  "sauce",
-  "prize":    "Free Signature House Sauce",
-  "code":     "DISHIO SAUCE",
-  "expires":  "August 31, 2026",
+  "prizeId":  "fries",
+  "prize":    "Free French Fries",
+  "code":     "DISHIO FRIES",
+  "minSpend": 25,
   "issuedAt": "2026-08-17T15:53:08.836Z",
   "source":   "spin-to-win"
 }
@@ -73,22 +92,11 @@ The `fetch` is commented out — point it at your CRM/POS endpoint to go live. I
 fire-and-forget so a network hiccup never blocks a guest mid-spin. If you drop the `?g=` param
 entirely, `guestId` is simply `null` and the page still works standalone.
 
-## Redemption codes are shared, not unique
+## One spin per device
 
-Every guest who wins the sauce gets the same `DISHIO SAUCE` phrase. That's intentional — it's
-fast to say at the counter and needs no lookup — but it means the code can be screenshotted and
-passed around, and the POS can't tell two redemptions apart. The 14-day expiry and the one-spin
-lockout are the only limits.
-
-If you need per-guest validation later, have `makeCode()` append a short random suffix and check
-it against whatever `reportPrize()` recorded.
-
-## One spin per guest
-
-Enforced client-side via `localStorage` under the key `hc_spin_v1`. Returning visitors see the
-prize they already won instead of re-spinning. This stops casual re-rolls, not determined ones —
-a private window or a different phone resets it. Move the check server-side if the giveaway is
-expensive enough to be worth gaming.
+Enforced client-side via `localStorage` under the key `hc_spin_v1`. Returning visitors see their
+code again rather than re-spinning. With a universal code this is presentation rather than
+enforcement — the real limit is the $25 minimum and the one-per-visit term at the register.
 
 ## Local preview
 
@@ -102,6 +110,6 @@ Then open <http://localhost:4321>.
 
 ## Accessibility &amp; support
 
-Spin results are announced via an `aria-live` region. `prefers-reduced-motion` shortens the spin
-and skips the confetti. Layout is phone-first (most traffic will be QR scans at the table) and
-caps to a centered column on desktop.
+Spin results are announced via an `aria-live` region, and the wheel's `aria-label` states the
+guaranteed prize. `prefers-reduced-motion` shortens the spin and skips the confetti. Layout is
+phone-first (most traffic will be QR scans at the table) and caps to a centered column on desktop.

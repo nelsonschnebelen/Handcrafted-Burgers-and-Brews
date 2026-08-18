@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Spin to Win | Handcraft Burgers &amp; Brew</title>
-<meta name="description" content="One spin, one prize, on the house. Free fries, free fountain soda, free Handcraft sauce, or 10% off your next order.">
+<meta name="description" content="Every spin wins. Free hand-cut fries with any order of $25 or more at Handcraft Burgers &amp; Brew.">
 <meta name="theme-color" content="#14110F">
 
 <style>
@@ -190,21 +190,26 @@ body::after{
   font-size:10.5px; line-height:1.6; color:var(--char);
 }
 
-/* ---------- prize legend ---------- */
-.legend{
+/* ---------- how it works ---------- */
+.steps{
   margin:30px 0 0; padding:0; list-style:none;
-  display:grid; grid-template-columns:1fr 1fr; gap:8px;
-  text-align:left;
+  display:grid; gap:8px; text-align:left; counter-reset:s;
 }
-.legend li{
-  display:flex; align-items:center; gap:9px;
+.steps li{
+  display:flex; align-items:center; gap:12px;
   background:var(--ink-2); border:1px solid var(--ink-3);
-  border-radius:10px; padding:11px 12px;
-  font-size:11.5px; line-height:1.25; font-weight:600; color:var(--paper);
+  border-radius:10px; padding:13px 14px;
+  font-size:12.5px; line-height:1.4; font-weight:600; color:var(--paper);
+  counter-increment:s;
 }
-.legend b{
-  width:8px; height:8px; border-radius:2px; flex:none;
+.steps li::before{
+  content:counter(s);
+  flex:none; width:23px; height:23px; border-radius:50%;
+  display:grid; place-items:center;
+  background:var(--flame); color:var(--cream);
+  font-family:var(--font-display); font-size:11px;
 }
+.steps b{ color:var(--amber); font-weight:800; letter-spacing:.03em }
 
 /* ---------- modal ---------- */
 .scrim{
@@ -316,9 +321,9 @@ body::after{
 
   <!-- ============ HERO ============ -->
   <section class="hero">
-    <span class="kicker">One spin per guest</span>
+    <span class="kicker">Every spin wins</span>
     <h2>Spin<br>to Win</h2>
-    <p>Something's coming off your check. Give the wheel a turn and see what the kitchen owes you.</p>
+    <p>No losing wedge, no small print games. Give it a turn and the fries are yours on any order over $25.</p>
   </section>
 
   <!-- ============ WHEEL ============ -->
@@ -334,18 +339,22 @@ body::after{
 
     <div class="wheel-shell">
       <svg id="wheel" viewBox="0 0 400 400" role="img"
-           aria-label="Prize wheel with free fries, free fountain soda, free signature house sauce, and ten percent off"></svg>
+           aria-label="Prize wheel. Every segment is the same prize: free French fries with any order of twenty-five dollars or more."></svg>
       <div class="hub" aria-hidden="true">Hand<em>Craft</em></div>
     </div>
   </section>
 
   <div class="cta">
     <button id="spinBtn" class="btn" type="button">Spin the Wheel</button>
-    <p class="legal">Everybody wins something. One spin per guest, per visit. Dine-in or pickup at 110 W 40th St.</p>
+    <p class="legal">Every spin wins. One regular order of hand-cut fries with any purchase of $25 or more, before tax. One per visit. Dine-in or pickup at 110 W 40th St.</p>
   </div>
 
-  <!-- ============ WHAT'S ON THE WHEEL ============ -->
-  <ul class="legend" id="legend"></ul>
+  <!-- ============ HOW IT WORKS ============ -->
+  <ol class="steps">
+    <li>Spin the wheel — every spin lands on free fries.</li>
+    <li>Say <b>Dishio Fries</b> at the register, or just show this screen.</li>
+    <li>Free hand-cut fries on any order of <b>$25 or more</b>. No expiry.</li>
+  </ol>
 
   <footer class="foot">
     <strong>Handcraft Burgers &amp; Brew</strong><br>
@@ -364,9 +373,9 @@ body::after{
       <p class="ticket__eyebrow">Say this at the register</p>
       <p class="ticket__prize" id="prizeName">Free French Fries</p>
       <span class="ticket__code" id="prizeCode">DISHIO FRIES</span>
-      <p class="ticket__exp" id="prizeExp">Valid through &mdash;</p>
+      <p class="ticket__exp" id="prizeExp">Valid on any order of $25 or more</p>
       <hr class="ticket__dash">
-      <p class="ticket__how">Show this screen to your cashier or read the code aloud. One reward per guest, per visit. Not combinable with other offers.</p>
+      <p class="ticket__how">Show this screen to your cashier or say the code aloud. One regular order of fries per visit, on any purchase of $25 or more before tax. No expiry. Not combinable with other offers.</p>
     </div>
 
     <button class="btn btn--amber" type="button" id="copyBtn">Copy My Code</button>
@@ -383,21 +392,30 @@ body::after{
 
   /* ==========================================================
      1. PRIZE CONFIG
-     `weight` controls how often a prize hits (relative, any scale).
-     Every segment is a real prize — nobody leaves empty-handed.
-     ========================================================== */
-  var PRIZES = [
-    { id:'fries', l1:'FREE', l2:'FRIES', name:'Free French Fries',          code:'DISHIO FRIES',   weight:12, color:'flame' },
-    { id:'sauce', l1:'FREE', l2:'SAUCE', name:'Free Signature House Sauce', code:'DISHIO SAUCE',   weight:33, color:'ink'   },
-    { id:'soda',  l1:'FREE', l2:'DRINK', name:'Free Fountain Soda',         code:'DISHIO DRINK',   weight:22, color:'flame' },
-    { id:'off10', l1:'10%',  l2:'OFF',   name:'10% Off Your Next Order',    code:'DISHIO 10% OFF', weight:33, color:'ink'   }
-  ];
+     Guaranteed-win wheel: every segment is the same prize, so what the
+     guest sees on the wheel is exactly what they can win. Nothing is
+     displayed that they have no chance at.
 
-  /* Eight segments so the wheel reads full: each prize appears twice,
-     directly opposite itself. Colors stay consistent per prize. */
-  var SEGMENTS = PRIZES.concat(PRIZES);
-  var SEG_COUNT = SEGMENTS.length;
+     To go back to a multi-prize weighted wheel, restore an array here,
+     add a weighted pick, and have rotationFor() target that prize's segments.
+     ========================================================== */
+  var PRIZE = {
+    id:       'fries',
+    l1:       'FREE',
+    l2:       'FRIES',
+    name:     'Free French Fries',
+    code:     'DISHIO FRIES',
+    minSpend: 25
+  };
+
+  /* Eight identical segments, alternating colors so the wheel still
+     reads as a wheel and the spin stays legible. */
+  var SEG_COUNT = 8;
   var SEG_DEG   = 360 / SEG_COUNT;
+  var SEGMENTS  = [];
+  for (var _i = 0; _i < SEG_COUNT; _i++){
+    SEGMENTS.push({ l1:PRIZE.l1, l2:PRIZE.l2, color: _i % 2 ? 'ink' : 'flame' });
+  }
 
   var FILL = {
     flame: { bg:'#D6402A', fg:'#F7F1E4' },
@@ -465,38 +483,13 @@ body::after{
     svg.appendChild(frag);
   }
 
-  function buildLegend(){
-    var ul = document.getElementById('legend');
-    PRIZES.forEach(function(p){
-      var li = document.createElement('li');
-      var dot = document.createElement('b');
-      dot.style.background = FILL[p.color].bg;
-      if (p.color === 'ink') dot.style.boxShadow = '0 0 0 1px #E8A020';
-      li.appendChild(dot);
-      li.appendChild(document.createTextNode(p.name));
-      ul.appendChild(li);
-    });
-  }
-
   /* ==========================================================
-     3. WEIGHTED DRAW
+     3. THE DRAW
+     Every segment is the same prize, so "which segment" is purely
+     cosmetic — pick any one and park it under the pointer.
      ========================================================== */
-  function drawPrize(){
-    var total = PRIZES.reduce(function(s,p){ return s + p.weight; }, 0);
-    var roll = Math.random() * total;
-    for (var i = 0; i < PRIZES.length; i++){
-      roll -= PRIZES[i].weight;
-      if (roll <= 0) return PRIZES[i];
-    }
-    return PRIZES[PRIZES.length - 1];
-  }
-
-  /* Pick which of the prize's two segments to land on, then work out
-     the rotation that parks that segment under the pointer at 12 o'clock. */
-  function rotationFor(prize){
-    var slots = [];
-    SEGMENTS.forEach(function(s, i){ if (s.id === prize.id) slots.push(i); });
-    var idx    = slots[Math.floor(Math.random() * slots.length)];
+  function rotationFor(){
+    var idx    = Math.floor(Math.random() * SEG_COUNT);
     var center = idx * SEG_DEG + SEG_DEG / 2;
     var jitter = (Math.random() - 0.5) * (SEG_DEG - 12);   // stay clear of the dividers
     var turns  = 6 + Math.floor(Math.random() * 3);
@@ -504,18 +497,12 @@ body::after{
   }
 
   /* ==========================================================
-     4. CODES
+     4. CODE
+     One universal phrase, no expiry. Safe to share because the $25
+     minimum is what caps the cost, not the code's secrecy.
      ========================================================== */
-  /* Codes are a fixed spoken phrase per prize — the guest just says
-     "Dishio sauce" at the register. Deliberately not unique per guest. */
-  function makeCode(prize){
-    return prize.code;
-  }
-
-  function expiryText(days){
-    var d = new Date();
-    d.setDate(d.getDate() + days);
-    return d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  function minSpendText(){
+    return 'Valid on any order of $' + PRIZE.minSpend + ' or more';
   }
 
   /* ==========================================================
@@ -535,10 +522,10 @@ body::after{
   function reportPrize(result){
     var payload = {
       guestId: guestId(),
-      prizeId: result.prizeId,
-      prize:   result.name,
-      code:    result.code,
-      expires: result.expires,
+      prizeId:  result.prizeId,
+      prize:    result.name,
+      code:     result.code,
+      minSpend: PRIZE.minSpend,
       issuedAt: new Date().toISOString(),
       source:  'spin-to-win'
     };
@@ -597,17 +584,15 @@ body::after{
     spinBtn.textContent = 'Good luck…';
     live.textContent = 'The wheel is spinning.';
 
-    var prize = drawPrize();
-    angle += rotationFor(prize) - (angle % 360);
+    angle += rotationFor() - (angle % 360);
 
     wheel.classList.add('is-spinning');
     wheel.style.transform = 'rotate(' + angle + 'deg)';
 
     var result = {
-      prizeId: prize.id,
-      name: prize.name,
-      code: makeCode(prize),
-      expires: expiryText(14)
+      prizeId: PRIZE.id,
+      name:    PRIZE.name,
+      code:    PRIZE.code
     };
 
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -627,10 +612,10 @@ body::after{
   function showPrize(result, celebrate){
     document.getElementById('prizeName').textContent = result.name;
     document.getElementById('prizeCode').textContent = result.code;
-    document.getElementById('prizeExp').textContent  = 'Valid through ' + result.expires;
+    document.getElementById('prizeExp').textContent  = minSpendText();
     document.getElementById('prizeSub').textContent  = celebrate
       ? 'Show this at the register — that’s the whole process.'
-      : 'Here’s the prize you already won. Still good until it expires.';
+      : 'Here’s your code again. It doesn’t expire, so use it whenever.';
     live.textContent = 'You won ' + result.name;
     openSheet(modal);
     if (celebrate) fireConfetti();
@@ -720,7 +705,6 @@ body::after{
 
   /* ---- go ---- */
   buildWheel();
-  buildLegend();
 })();
 </script>
 </body>
