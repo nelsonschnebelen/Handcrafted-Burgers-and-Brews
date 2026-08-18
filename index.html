@@ -149,11 +149,10 @@ body::after{
   display:grid; place-items:center;
   font-family:var(--font-display);
   color:var(--cream);
-  font-size:clamp(10px,3.2vw,13px);
-  line-height:1.06; letter-spacing:.04em; text-transform:uppercase;
+  font-size:clamp(16px,5.2vw,22px);
+  line-height:1; letter-spacing:.05em; text-transform:uppercase;
   text-align:center; padding:6px;
 }
-.hub em{ display:block; font-style:normal; color:var(--flame); font-size:1.22em }
 
 /* ---------- buttons ---------- */
 .btn{
@@ -185,6 +184,14 @@ body::after{
 .btn--amber:active{ box-shadow:0 1px 0 #8A5810 }
 
 .cta{ margin-top:30px }
+.notice{
+  margin:0 0 14px; padding:11px 14px;
+  background:rgba(232,160,32,.08);
+  border:1px solid rgba(232,160,32,.3);
+  border-radius:10px;
+  font-size:12px; line-height:1.4; color:var(--paper);
+}
+.notice b{ color:var(--amber); font-weight:800 }
 .legal{
   margin:16px auto 0; max-width:36ch;
   font-size:10.5px; line-height:1.6; color:var(--char);
@@ -321,7 +328,7 @@ body::after{
 
   <!-- ============ HERO ============ -->
   <section class="hero">
-    <span class="kicker">Every spin wins</span>
+    <span class="kicker">One try per guest</span>
     <h2>Spin<br>to Win</h2>
   </section>
 
@@ -338,19 +345,20 @@ body::after{
 
     <div class="wheel-shell">
       <svg id="wheel" viewBox="0 0 400 400" role="img"
-           aria-label="Prize wheel with four prizes: two dollars off, three dollars off, four dollars off, and fifty percent off. Published odds are listed below the wheel."></svg>
-      <div class="hub" aria-hidden="true">Hand<em>Craft</em></div>
+           aria-label="Prize wheel with four prizes: two dollars off, three dollars off, four dollars off, and fifty percent off. One try per guest."></svg>
+      <div class="hub" aria-hidden="true">Spin</div>
     </div>
   </section>
 
   <div class="cta">
+    <p class="notice">You get <b>one try</b> — your spin is final.</p>
     <button id="spinBtn" class="btn" type="button">Spin the Wheel</button>
-    <p class="legal">Every spin wins. Discount must be used with a purchase, before tax; 50% off capped at $15. One per guest, per visit. Dine-in or pickup at 110 W 40th St.<br><span id="oddsLine"></span></p>
+    <p class="legal">Every spin wins. One try per guest, per visit. Discount must be used with a purchase, before tax; 50% off capped at $15. Dine-in or pickup at 110 W 40th St.</p>
   </div>
 
   <!-- ============ HOW IT WORKS ============ -->
   <ol class="steps">
-    <li>Spin once — every spin wins something.</li>
+    <li><b>One try per guest</b> — and every spin wins something.</li>
     <li>Show this screen at the register, or say your code aloud.</li>
     <li><b>Must be used with a purchase.</b> No expiry.</li>
   </ol>
@@ -424,9 +432,10 @@ body::after{
 
   var TOTAL_WEIGHT = PRIZES.reduce(function(t,p){ return t + p.weight; }, 0);
 
-  /* Render the true share, never a rounded-up one. A published 3% next
-     to a real 2.5% overstates the guest's chances, which is the exact
-     drift this whole setup exists to prevent. */
+  /* No longer shown to guests — the published-odds line was removed at
+     the client's request. Still recorded on every issued code via
+     reportPrize(), so there is a dated record of the odds that were live
+     when any given prize went out. */
   function oddsPct(prize){
     var pct = prize.weight / TOTAL_WEIGHT * 100;
     if (pct > 0 && pct < 0.01) return '<0.01%';
@@ -753,18 +762,8 @@ body::after{
     addEventListener('resize', size, { once:true });
   }
 
-  /* ---- published odds: generated from the weights so the number a
-     guest reads can never drift from the number the wheel uses ---- */
-  function buildOdds(){
-    document.getElementById('oddsLine').textContent =
-      'Published odds per spin: ' + PRIZES.map(function(p){
-        return p.name.replace(' Your Order','') + ' ' + oddsPct(p);
-      }).join(', ') + '.';
-  }
-
   /* ---- go ---- */
   buildWheel();
-  buildOdds();
 })();
 </script>
 </body>
