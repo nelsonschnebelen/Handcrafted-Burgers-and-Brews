@@ -386,7 +386,6 @@ body::after{
     </div>
 
     <button class="btn btn--amber" type="button" id="copyBtn">Copy My Code</button>
-    <button class="btn btn--ghost" type="button" id="dirBtn" style="margin-top:10px">Get Directions</button>
   </div>
 </div>
 
@@ -723,10 +722,6 @@ body::after{
     if (navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(code).then(done).catch(done);
     } else { done(); }
-  });
-
-  document.getElementById('dirBtn').addEventListener('click', function(){
-    window.open('https://maps.google.com/?q=110+W+40th+St,+New+York,+NY+10018', '_blank', 'noopener');
   });
 
   modal.addEventListener('click', function(e){ if (e.target === modal) closeSheet(modal); });
