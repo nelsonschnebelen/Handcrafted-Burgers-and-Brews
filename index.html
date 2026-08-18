@@ -413,6 +413,22 @@ body::after{
      once at the POS. Use it for anything expensive enough to be worth
      screenshotting and passing around.
      ========================================================== */
+  /* ==========================================================
+     FORCED OUTCOME — testing and demos
+
+     Set to a prize id ('off2', 'off3', 'off4', 'half') to make every
+     spin land there. null = normal weighted draw. A ?force=off2 query
+     param overrides this for a single visit without touching the file.
+
+     READ THIS BEFORE SHIPPING IT: while a force is active the wheel
+     still DISPLAYS the other three prizes but can never land on them.
+     In front of real guests that is a deceptive promotion, not a rare
+     one. If you want every guest to get $2 off for real, don't force
+     it — delete the other three entries from PRIZES so the wheel shows
+     only what is actually winnable. Same guest outcome, no deception.
+     ========================================================== */
+  var FORCE_PRIZE = 'off2';
+
   /* Weights are out of 1,000 so they read directly as "per 1,000 spins":
      50% off = 1 in 1,000, $4 off = 2 in 1,000 (1 in 500), and the
      remaining 997 split between $2 and $3. */
@@ -527,7 +543,22 @@ body::after{
   /* ==========================================================
      3. WEIGHTED DRAW
      ========================================================== */
+  function forcedPrize(){
+    var id = FORCE_PRIZE;
+    try {
+      var q = new URLSearchParams(location.search).get('force');
+      if (q) id = q;
+    } catch(e){}
+    if (!id) return null;
+    var hit = null;
+    PRIZES.forEach(function(p){ if (p.id === id) hit = p; });
+    if (!hit) console.error('[handcraft] force="' + id + '" matches no prize id; falling back to a normal draw.');
+    return hit;
+  }
+
   function drawPrize(){
+    var forced = forcedPrize();
+    if (forced) return forced;
     var roll = Math.random() * TOTAL_WEIGHT;
     for (var i = 0; i < PRIZES.length; i++){
       roll -= PRIZES[i].weight;
@@ -581,7 +612,8 @@ body::after{
       prizeId:  result.prizeId,
       prize:    result.name,
       code:     result.code,
-      odds:     result.odds,
+      odds:     result.forced ? 'forced' : result.odds,
+      forced:   !!result.forced,
       issuedAt: new Date().toISOString(),
       source:  'spin-to-win'
     };
@@ -651,7 +683,8 @@ body::after{
       name:    prize.name,
       code:    makeCode(prize),
       terms:   prize.terms,
-      odds:    oddsPct(prize)
+      odds:    oddsPct(prize),
+      forced:  !!forcedPrize()
     };
 
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -763,6 +796,14 @@ body::after{
   }
 
   /* ---- go ---- */
+  (function warnIfForced(){
+    var f = forcedPrize();
+    if (!f) return;
+    console.warn('[handcraft] FORCED OUTCOME ACTIVE — every spin will land on "' + f.name +
+      '". The wheel still displays prizes that cannot be won. Fine for testing; ' +
+      'deceptive in front of real guests. Set FORCE_PRIZE = null before launch.');
+  })();
+
   buildWheel();
 })();
 </script>

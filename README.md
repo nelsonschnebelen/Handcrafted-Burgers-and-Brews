@@ -43,10 +43,29 @@ Two safeguards keep it that way:
 
 - **Published odds are generated from the same weights the wheel uses**, and rendered at their
   true value rather than rounded — a published "3%" beside a real 2.5% overstates the guest's
-  chances. They cannot drift apart. They appear as a single line in the fine print under the
-  wheel; the larger on-page odds table was removed at the client's request.
+  chances. They cannot drift apart. Both the on-page odds table and the fine-print odds line were
+  removed at the client's request; `oddsPct()` still feeds the reporting payload.
 - **A zero or negative weight logs a console error.** To retire a prize, delete it from `PRIZES`
   so it comes off the wheel; do not zero its weight and leave the wedge showing.
+- **`FORCE_PRIZE` warns loudly whenever it is set**, and marks every issued code as forced.
+
+## Forced outcome (currently ACTIVE)
+
+`FORCE_PRIZE` at the top of the script block is set to `'off2'`, so **every spin lands on $2
+off**. `null` restores the weighted draw. A `?force=off3` query param overrides it per-visit
+without editing the file, which is the easy way to demo a specific tier.
+
+While a force is active the page logs a console warning on every load, and `reportPrize()` stamps
+`forced: true` with `odds: "forced"` so records never misreport a forced win as a random draw.
+
+**Before this goes in front of real guests, set `FORCE_PRIZE = null`.** With it active the wheel
+still displays $3, $4, and 50% off while being unable to land on them — that is the
+zero-probability display described above, and it is the thing that makes a promotion deceptive
+rather than merely stingy.
+
+If the goal is genuinely that every guest gets $2 off, don't force it — delete the other three
+entries from `PRIZES`. The wheel then shows only $2 OFF, lands on it every time, and is completely
+honest. Identical outcome for the guest, no exposure.
 
 ## Redemption codes
 
@@ -101,6 +120,7 @@ https://your-host/?g=guest_8842
   "prize":    "50% Off Your Order",
   "code":     "DISHIO HALF 4817",
   "odds":     "0.1%",
+  "forced":   false,
   "issuedAt": "2026-08-17T15:53:08.836Z",
   "source":   "spin-to-win"
 }
@@ -130,5 +150,5 @@ Then open <http://localhost:4321>.
 ## Accessibility &amp; support
 
 Spin results are announced via an `aria-live` region, and the wheel's `aria-label` lists all four
-prizes and points to the published odds. `prefers-reduced-motion` shortens the spin and skips the confetti. Layout is
+prizes and the one-try limit. `prefers-reduced-motion` shortens the spin and skips the confetti. Layout is
 phone-first (most traffic will be QR scans at the table) and caps to a centered column on desktop.
