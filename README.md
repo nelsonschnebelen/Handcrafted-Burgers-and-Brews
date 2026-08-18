@@ -6,44 +6,69 @@ A single-file spin-to-win promo page for [Handcraft Burgers &amp; Brew](https://
 No build step, no dependencies, no external assets. `index.html` is the whole app — drop it on
 any static host.
 
-## The offer
+## The prizes
 
-**Free hand-cut fries with any order of $25 or more.** Universal code, no expiry:
+| Prize | Code | Odds | Frequency |
+|---|---|---|---|
+| $2 off your order | `DISHIO $2` | 61.7% | ~1 in 2 |
+| $3 off your order | `DISHIO $3` | 38% | ~1 in 3 |
+| $4 off your order | `DISHIO $4 ####` | 0.2% | 1 in 500 |
+| 50% off your order | `DISHIO HALF ####` | 0.1% | 1 in 1,000 |
 
-```
-DISHIO FRIES
-```
+Verified over 2,000,000 simulated draws: $4 off landed 1 in 506, 50% off 1 in 979, with zero
+mismatches between the prize awarded and the segment the wheel stopped on.
 
-## This is a guaranteed-win wheel, on purpose
+Discounts must be used with a purchase, before tax. 50% off is capped at $15. No expiry.
 
-All eight segments are the same prize. That is a deliberate design decision, not an oversight.
+Weights are expressed out of 1,000 so they read directly as "per 1,000 spins."
 
-A wheel that *displays* four prizes but always lands on one is a rigged wheel. Guests compare
-results, and a promotion that shows odds it doesn't honor invites real trouble — FTC deceptive-
-practice rules and state promotion law both care about this. So the wheel shows only what you can
-actually win. The spin stays fun and tactile; nobody is told they had a shot at something they
-didn't.
+## Every displayed prize is genuinely winnable
 
-The economics work because the **$25 minimum** caps the cost, not the code's secrecy. That's why
-a universal, non-expiring, freely-shareable code is safe here: the worst case is someone spends
-$25 and gets fries, which is the deal you're offering anyway.
+The wheel shows four prizes and all four can actually be won. That is deliberate.
+
+A wheel that *displays* a prize it can never land on is a deceptive promotion — the FTC treats
+zero-probability displayed prizes as a deceptive practice, and several states' promotion statutes
+require displayed prizes to be attainable with disclosed odds. "Rare" is fine. "Shown but
+impossible" is not.
+
+Making the two premium tiers genuinely rare rather than fake costs about **$8 per 1,000 spins**
+($2,390 vs $2,381 for a $2/$3-only wheel). That is the entire price of the difference.
+
+**Open question for counsel:** the offer now requires a purchase. Purchase (consideration) +
+random outcome (chance) + discount (prize) is the three-element test that defines a lottery in
+most US states, which is why promotions of this shape usually carry a "no purchase necessary"
+alternate entry route. Worth a review before this goes to print.
+
+Two safeguards keep it that way:
+
+- **Published odds are generated from the same weights the wheel uses**, and rendered at their
+  true value rather than rounded — a published "3%" beside a real 2.5% overstates the guest's
+  chances. They cannot drift apart. They appear as a single line in the fine print under the
+  wheel; the larger on-page odds table was removed at the client's request.
+- **A zero or negative weight logs a console error.** To retire a prize, delete it from `PRIZES`
+  so it comes off the wheel; do not zero its weight and leave the wedge showing.
+
+## Redemption codes
+
+Cheap tiers use a flat spoken phrase — someone sharing `DISHIO $2` costs you two dollars, which
+is not worth policing. The two premium tiers set `unique:true`, which appends a random four-digit
+suffix (`DISHIO HALF 4817`) so the POS can burn the code after one redemption.
+
+**This matters more than it did for the fries offer.** A universal, freely-shareable 50%-off code
+would let anyone claim the rare prize without ever spinning, which defeats the point of the tier.
+Have the register validate suffixed codes against what `reportPrize()` recorded, or the 1-in-1,000
+becomes 1-in-1 for anyone who sees a screenshot.
 
 ## Configuration
 
-**The prize** — the `PRIZE` object at the top of the script block:
+**Prizes and odds** — the `PRIZES` array at the top of the script block. Each entry carries its
+own `weight` (relative share), `code`, `terms`, and a `unique` flag. `l1`/`l2` are the two stacked
+lines on that prize's wheel segment.
 
-```js
-var PRIZE = {
-  id:'fries', l1:'FREE', l2:'FRIES',
-  name:'Free French Fries',
-  code:'DISHIO FRIES',
-  minSpend: 25
-};
-```
-
-`l1`/`l2` are the two stacked lines on each wheel segment. `minSpend` feeds the ticket condition
-line, the terms, and the reporting payload — change the number in one place and it updates
-everywhere. Segment count is `SEG_COUNT` (8), alternating red/charcoal.
+The wheel, the odds list, the fine print, the ticket, and the reporting payload all render from
+this array, so adding or removing a prize updates the whole page. Each prize occupies two of the
+eight segments; segment count is cosmetic, odds come from `weight`, which is why the published
+odds appear below the wheel.
 
 **Brand colors** — the `:root` block at the top of the stylesheet:
 
@@ -57,13 +82,6 @@ everywhere. Segment count is `SEG_COUNT` (8), alternating red/charcoal.
 > **Note:** handcraftburgers.com sits behind a Cloudflare bot check, so these were matched by eye
 > to the brand's craft-burger signage rather than sampled from their real assets. Swap in the
 > official hex values here and the whole page follows.
-
-### Going back to a multi-prize wheel
-
-If you ever want real variable prizes again: restore an array of prizes with `weight` values, add
-a weighted pick, and have `rotationFor()` target that prize's segments instead of a random one.
-The wheel, terms, and ticket all render from the config, so the rest follows. Just keep the
-displayed segments honest about what's actually winnable.
 
 ## Guest attribution
 
@@ -79,10 +97,10 @@ https://your-host/?g=guest_8842
 ```json
 {
   "guestId":  "guest_8842",
-  "prizeId":  "fries",
-  "prize":    "Free French Fries",
-  "code":     "DISHIO FRIES",
-  "minSpend": 25,
+  "prizeId":  "half",
+  "prize":    "50% Off Your Order",
+  "code":     "DISHIO HALF 4817",
+  "odds":     "0.1%",
   "issuedAt": "2026-08-17T15:53:08.836Z",
   "source":   "spin-to-win"
 }
@@ -95,8 +113,9 @@ entirely, `guestId` is simply `null` and the page still works standalone.
 ## One spin per device
 
 Enforced client-side via `localStorage` under the key `hc_spin_v1`. Returning visitors see their
-code again rather than re-spinning. With a universal code this is presentation rather than
-enforcement — the real limit is the $25 minimum and the one-per-visit term at the register.
+code again rather than re-spinning. This stops casual re-rolls, not determined ones — a private
+window or a different phone resets it. Since a re-roll is another shot at the 1-in-1,000, move the
+check server-side if that bothers you.
 
 ## Local preview
 
@@ -110,6 +129,6 @@ Then open <http://localhost:4321>.
 
 ## Accessibility &amp; support
 
-Spin results are announced via an `aria-live` region, and the wheel's `aria-label` states the
-guaranteed prize. `prefers-reduced-motion` shortens the spin and skips the confetti. Layout is
+Spin results are announced via an `aria-live` region, and the wheel's `aria-label` lists all four
+prizes and points to the published odds. `prefers-reduced-motion` shortens the spin and skips the confetti. Layout is
 phone-first (most traffic will be QR scans at the table) and caps to a centered column on desktop.
