@@ -652,10 +652,37 @@ body::after{
     catch(e){ return null; }
   }
 
+  /* ?reset clears the one-try lockout so the wheel can be spun again.
+     Testing convenience — strip it from any link that reaches guests. */
+  try {
+    if (new URLSearchParams(location.search).has('reset')){
+      localStorage.removeItem(STORE_KEY);
+      console.warn('[handcraft] ?reset — one-try lockout cleared for this device.');
+    }
+  } catch(e){}
+
+  function prizeById(id){
+    var hit = null;
+    PRIZES.forEach(function(p){ if (p.id === id) hit = p; });
+    return hit;
+  }
+
+  /* A returning guest used to land on a wheel sitting at 0deg while the
+     button offered to show a prize it wasn't pointing at. Park the wheel
+     on the segment they actually won — no animation, no re-draw — so the
+     wheel and the ticket always agree. */
+  function parkWheelOn(prizeId){
+    var prize = prizeById(prizeId);
+    if (!prize) return;
+    angle = ((rotationFor(prize) % 360) + 360) % 360;
+    wheel.style.transform = 'rotate(' + angle + 'deg)';   // .is-spinning not yet applied, so this cannot animate
+  }
+
   var prior = priorPlay();
   if (prior && prior.code){
     spinBtn.textContent = 'View My Prize';
     spinBtn.dataset.mode = 'replay';
+    parkWheelOn(prior.prizeId);
   }
 
   spinBtn.addEventListener('click', function(){
@@ -686,8 +713,22 @@ body::after{
       forced:  !!forcedPrize()
     };
 
+    /* The reveal is driven by the wheel actually stopping, not by a timer.
+       A timer alone drifts out of sync whenever the browser throttles the
+       animation — background the tab mid-spin and the ticket would pop open
+       while the wheel was still turning. transitionend fires when the wheel
+       genuinely stops; the timeout below is only a safety net for the case
+       where the event never arrives at all. */
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    setTimeout(function(){
+    var done   = false;
+    var guard;
+
+    function finish(){
+      if (done) return;
+      done = true;
+      clearTimeout(guard);
+      wheel.removeEventListener('transitionend', onEnd);
+
       spinning = false;
       spinBtn.textContent = 'View My Prize';
       spinBtn.dataset.mode = 'replay';
@@ -696,11 +737,19 @@ body::after{
       try { localStorage.setItem(STORE_KEY, JSON.stringify(result)); } catch(e){}
       reportPrize(result);
       showPrize(result, true);
-    }, reduce ? 700 : 6350);
+    }
+
+    function onEnd(e){
+      if (e.target === wheel && e.propertyName === 'transform') finish();
+    }
+
+    wheel.addEventListener('transitionend', onEnd);
+    guard = setTimeout(finish, reduce ? 1200 : 9000);
   }
 
   /* --- reveal --- */
   function showPrize(result, celebrate){
+    if (spinning) return;                 // never reveal mid-spin
     document.getElementById('prizeName').textContent = result.name;
     document.getElementById('prizeCode').textContent = result.code;
     document.getElementById('prizeExp').textContent  = result.terms;

@@ -130,10 +130,22 @@ The `fetch` is commented out — point it at your CRM/POS endpoint to go live. I
 fire-and-forget so a network hiccup never blocks a guest mid-spin. If you drop the `?g=` param
 entirely, `guestId` is simply `null` and the page still works standalone.
 
+## The reveal is bound to the wheel, not a timer
+
+The prize ticket opens on the wheel's `transitionend`, not on a `setTimeout`. A timer alone drifts
+out of sync the moment the browser throttles the animation — background the tab mid-spin and the
+ticket pops open while the wheel is still turning. A 9s timeout remains only as a safety net for
+the case where `transitionend` never arrives.
+
+`showPrize()` also refuses to run while `spinning` is true, so no click, keypress, or stray call
+can surface the prize early.
+
 ## One spin per device
 
 Enforced client-side via `localStorage` under the key `hc_spin_v1`. Returning visitors see their
-code again rather than re-spinning. This stops casual re-rolls, not determined ones — a private
+code again rather than re-spinning, and the wheel is parked on the segment they actually won so it
+never contradicts the ticket. Add **`?reset`** to the URL to clear the lockout and spin again —
+useful while testing, strip it from anything guests see. This stops casual re-rolls, not determined ones — a private
 window or a different phone resets it. Since a re-roll is another shot at the 1-in-1,000, move the
 check server-side if that bothers you.
 
